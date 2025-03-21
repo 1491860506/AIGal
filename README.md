@@ -15,6 +15,7 @@ rembg项目地址 https://github.com/danielgatis/rembg
 gpt-sovits项目地址 https://github.com/RVC-Boss/GPT-SoVITS
 
 使用方式，运行game目录下的gui.exe，填写LLM配置、sovits配置、AI绘画配置，然后开始游戏即可
+文档：https://aigal.qqframe.cn/
 
 ## 许可证
 
