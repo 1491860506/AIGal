@@ -2,7 +2,6 @@
 from GPT import gpt, gpt_destroy
 import os
 import re
-import configparser
 import time
 import random
 from handle_prompt import process_prompt
@@ -14,9 +13,7 @@ try:
 except:
     game_directory = os.getcwd()
 
-config = configparser.ConfigParser()
-os.makedirs(rf"{game_directory}\data", exist_ok=True)
-
+config_file =os.path.join(game_directory,"config.json")
 def getjson_outline(input_string):
     """
     从字符串中提取 JSON 对象。
@@ -61,16 +58,24 @@ def clean_filename(filename):
     return filename
 
 def getoutline():
-    config.read(rf"{game_directory}\config.ini", encoding='utf-8')
+    try:
+        with open(config_file, "r", encoding="utf-8") as f:
+            config = json.load(f)
+    except FileNotFoundError:
+        print("Config file not found.")
+        return "error"
+    except json.JSONDecodeError:
+        print("Error decoding config.json.")
+        return "error"
+
     theme = config["剧情"].get("outline_content_entry", "")
-    prompt,userinput=process_prompt('大纲')
+    prompt, userinput = process_prompt('大纲')
 
     # 生成随机id
     id = random.randint(1, 100000)  # 生成一个1到100000之间的随机正整数
-
     while True:
         try:
-            gpt_response = gpt(prompt, userinput, 'outline', id)
+            gpt_response = gpt(prompt, userinput, '大纲', id)
             if gpt_response == "error":
                 print(f"尝试失败，失败原因：GPT函数返回错误。")
                 continue
@@ -97,7 +102,7 @@ def getoutline():
                 cleaned_title = clean_filename(title)
                 json_object["title"] = cleaned_title  # 更新json中的title
 
-                data_dir = game_directory + "\\data"
+                data_dir = os.path.join(game_directory, "data")
                 os.makedirs(data_dir, exist_ok=True)  # 确保data目录存在
                 dir_name = cleaned_title
                 dir_path = os.path.join(data_dir, dir_name)
@@ -128,8 +133,8 @@ def getoutline():
 
                 try:
                     config["剧情"]["story_title"] = dir_name
-                    with open(rf"{game_directory}\config.ini", "w", encoding="utf-8") as configfile:
-                        config.write(configfile)
+                    with open(config_file, "w", encoding="utf-8") as configfile:
+                        json.dump(config,configfile,indent=4,ensure_ascii=False)
                     print("获取大纲成功")
                     gpt_destroy(id)
                     return "success"

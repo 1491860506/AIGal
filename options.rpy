@@ -3,6 +3,8 @@
 ## 以“##”开头的语句是注释，您不应该对其取消注释。以“#”开头的语句是注释掉的代码，
 ## 在适用的时候您可能需要对其取消注释。
 
+## TODO: Change these top three values (config.name, build.name, and
+## config.save_directory) to something unique for your project!
 
 ## 基础 ##########################################################################
 
@@ -11,31 +13,34 @@
 ##
 ## 带有 _() 的字符串表示其可被翻译。
 
-define config.name = _("AI GAL")
-
-
-## 决定上面给出的标题是否显示在标题界面屏幕。设置为 False 来隐藏标题。
-
-define gui.show_name = True
-
-
-## 游戏版本号。
-
-define config.version = "1.0-modify"
-
-
-## 放置在游戏内“关于”屏幕上的文本。将文本放在三个引号之间，并在段落之间留出空
-## 行。
-
-define gui.about = _p("""
-AIGAL完全开源免费，喜欢的请在github上给个star
-""")
-
+define config.name = _("AIGALGAME")
 
 ## 在构建的发布版中，可执行文件和目录所使用的短名称。此处仅限使用 ASCII 字符，并
 ## 且不能包含空格、冒号或分号。
 
-define build.name = "AIGAL"
+define build.name = "AIGALGAME"
+
+## 存档目录 ########################################################################
+##
+## 控制 Ren'Py 放置游戏存档的特定操作系统目录。存档文件将放置在：
+##
+## Windows：%APPDATA\RenPy\<config.save_directory>
+##
+## Macintosh：$HOME/Library/RenPy/<config.save_directory>
+##
+## Linux：$HOME/.renpy/<config.save_directory>
+##
+## 该语句通常不应变更，若要变更，应为有效字符串而不是表达式。
+
+## Note: a typical save_directory value looks like "FreshProject-1671818013"
+define config.save_directory = renpy.config.gamedir+"\saves"
+define config.has_autosave = False
+define config.has_quicksave = True
+
+
+## 游戏版本号。
+
+define config.version = "1.0.5"
 
 
 ## 音效和音乐 #######################################################################
@@ -86,11 +91,6 @@ define config.after_load_transition = None
 
 define config.end_game_transition = None
 
-
-## 用于控制在游戏开始标签不存在时转场的变量。作为替代，在显示初始化场景后使用
-## with 语句。
-
-
 ## 窗口管理 ########################################################################
 ##
 ## 此命令控制对话框窗口何时显示。若为 show，对话框将总是显示。若为 hide，对话框
@@ -109,6 +109,8 @@ define config.window_show_transition = Dissolve(.2)
 define config.window_hide_transition = Dissolve(.2)
 
 
+default preferences.voice_sustain=True
+
 ## 默认设置 ########################################################################
 
 ## 控制默认的文字显示速度。默认的 0 为瞬间，而其他数字则是每秒显示出的字符数。
@@ -121,20 +123,6 @@ default preferences.text_cps = 30
 default preferences.afm_time = 15
 
 
-## 存档目录 ########################################################################
-##
-## 控制 Ren'Py 放置游戏存档的特定操作系统目录。存档文件将放置在：
-##
-## Windows：%APPDATA\RenPy\<config.save_directory>
-##
-## Macintosh：$HOME/Library/RenPy/<config.save_directory>
-##
-## Linux：$HOME/.renpy/<config.save_directory>
-##
-## 该语句通常不应变更，若要变更，应为有效字符串而不是表达式。
-
-define config.save_directory = config.basedir+"\game\saves"
-define config.has_autosave = False
 
 ## 图标 ##########################################################################
 ##
@@ -142,10 +130,42 @@ define config.has_autosave = False
 
 define config.window_icon = "gui/window_icon.png"
 
+## Custom Options ##############################################################
+##
+## Config variables that I like to have set up.
+
+## Convenience for not crashing on grids without enough items https://
+## www.renpy.org/doc/html/config.html#var-config.allow_underfull_grids In modern
+## Ren'Py, this is already the default.
+define config.allow_underfull_grids = True
+
+## Default volume % for the various volume sliders https://www.renpy.org/doc/
+## html/preferences.html#audio-channel-defaults
+define config.default_music_volume = 1
+define config.default_sfx_volume = 1
+define config.default_voice_volume = 1
+
+## Optional; this reverts the behaviour of the volume sliders back to pre-8.1,
+## so muting the game shows the volume sliders all at 0
+# define config.preserve_volume_when_muted = False
+
+## The number of auto save slots Ren'Py will save to before it starts
+## overwriting the first one
+define config.autosave_slots = 6
+## Same thing, but for quick save
+define config.quicksave_slots = 6
 
 ## 构建配置 ########################################################################
 ##
 ## 此部分控制 Ren'Py 如何将您的项目转变为发行版文件。
+
+
+## The width and height of thumbnails used by the save slots.
+define config.thumbnail_width =600
+define config.thumbnail_height = 400
+
+
+
 
 init python:
 
@@ -160,8 +180,9 @@ init python:
     ##
     ## ** 匹配所有字符，包括目录分隔符。
     ##
-    ## 例如，“*.txt”匹配基础目录中的 txt 文件，“game/**.ogg”匹配游戏目录或任何子
-    ## 目录中的 ogg 文件，“**.psd”匹配项目中任何位置的 psd 文件。
+    ## For example, "*.txt" matches txt files in the base directory, "game/
+    ## **.ogg" matches ogg files in the game directory or any of its
+    ## subdirectories, and "**.psd" matches psd files anywhere in the project.
 
     ## 将文件列为 None 来使其从构建的发行版中排除。
 
@@ -170,17 +191,15 @@ init python:
     build.classify('**/.**', None)
     build.classify('**/#**', None)
     build.classify('**/thumbs.db', None)
+    build.classify('**.psd', None)
+    build.classify('game/cache/**', None)
+    ## NOTE: This excludes markdown and txt files. If you use these formats for
+    ## README or instructions, you may want to remove these lines.
+    build.classify('**.txt', None)
+    build.classify('**.md', None)
 
     ## 若要封装文件，需将其列为“archive”。
 
-    # build.classify('game/**.png', 'archive')
-    # build.classify('game/**.jpg', 'archive')
-
-    ## 匹配为文档模式的文件会在 Mac 应用程序构建中被复制，因此它们同时出现在 APP
-    ## 和 ZIP 文件中。
-
-    build.documentation('*.html')
-    build.documentation('*.txt')
 
 
 ## 执行应用内购需要一个 Google Play 许可密钥。许可密钥可以在 Google Play 开发者

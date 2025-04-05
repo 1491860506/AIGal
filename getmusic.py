@@ -1,5 +1,4 @@
 import requests
-import configparser
 import json
 import os
 import urllib3
@@ -13,8 +12,20 @@ try:
 except:
     game_directory = os.getcwd()
 
-config = configparser.ConfigParser()
+#config = configparser.ConfigParser()
+config_file = os.path.join(game_directory,"config.json")
 
+def load_config():
+    global config  # Declare it's the global config variable
+    try:
+        with open(config_file, "r", encoding="utf-8") as f:
+            config = json.load(f)  # Read config as JSON
+    except FileNotFoundError:
+        print("Config file not found.")
+        config={}
+    except json.JSONDecodeError:
+        print("Error decoding config.json.")
+        config={}
 
 def extract_json(text):
     start_index = text.find('{')
@@ -33,11 +44,11 @@ def extract_json(text):
 
 def generate_background_music():
     music_name="background"
-    config.read(rf"{game_directory}\config.ini", encoding='utf-8')
+    load_config()
     story_title=config["剧情"].get("story_title", "")
-    os.makedirs(rf"{game_directory}\data\{story_title}\music", exist_ok=True)
-    music_url = config.get("AI音乐", "base_url")
-    key = config.get("AI音乐", "api_key")
+    os.makedirs(os.path.join(game_directory,"data",story_title,"music"), exist_ok=True)
+    music_url = config["AI音乐"].get("base_url")
+    key = config["AI音乐"].get("api_key")
     headers = {
         'Authorization': f'Bearer {key}',
         'Accept': 'application/json',
@@ -89,22 +100,22 @@ def generate_background_music():
         response = requests.post(music_url, headers=headers, json=payload)
         data=json.loads(response.text)["data"]
         with requests.get(data[0]["audio_url"], stream=True) as r:
-            with open(rf"{game_directory}\data\{story_title}\music\{music_name}.mp3", 'wb') as f:
+            with open(os.path.join(game_directory,"data",story_title,"music",f"{music_name}.mp3"), 'wb') as f:
                 for chunk in r.iter_content(chunk_size=8192):
                     if chunk:
                         f.write(chunk)
         with requests.get(data[1]["audio_url"], stream=True) as r:
-            with open(rf"{game_directory}\data\{story_title}\music\{music_name}1.mp3", 'wb') as f:
+            with open(os.path.join(game_directory,"data",story_title,"music",f"{music_name}1.mp3"), 'wb') as f:
                 for chunk in r.iter_content(chunk_size=8192):
                     if chunk:
                         f.write(chunk)
         with requests.get(data[0]["video_url"], stream=True) as r:
-            with open(rf"{game_directory}\data\{story_title}\music\{music_name}.mp4", 'wb') as f:
+            with open(os.path.join(game_directory,"data",story_title,"music",f"{music_name}.mp4"), 'wb') as f:
                 for chunk in r.iter_content(chunk_size=8192):
                     if chunk:
                         f.write(chunk)
         with requests.get(data[1]["video_url"], stream=True) as r:
-            with open(rf"{game_directory}\data\{story_title}\music\{music_name}1.mp4", 'wb') as f:
+            with open(os.path.join(game_directory,"data",story_title,"music",f"{music_name}1.mp4"), 'wb') as f:
                 for chunk in r.iter_content(chunk_size=8192):
                     if chunk:
                         f.write(chunk)
@@ -113,15 +124,14 @@ def generate_background_music():
         print("音乐生成失败，检查apikey是否有效")
         return "error"
 
-
-def generate_end_music():
-    music_name="end"
-    config.read(rf"{game_directory}\config.ini", encoding='utf-8')
+def generate_end_music(story_id):
+    music_name=f"end_{story_id}"
+    load_config()
     story_title=config["剧情"].get("story_title", "")
-    os.makedirs(rf"{game_directory}\data\{story_title}\music", exist_ok=True)
-    music_url = config.get("AI音乐", "base_url")
-    key = config.get("AI音乐", "api_key")
-    lang=config.get("剧情","language")
+    os.makedirs(os.path.join(game_directory,"data",story_title,"music"), exist_ok=True)
+    music_url = config["AI音乐"].get("base_url")
+    key = config["AI音乐"].get("api_key")
+    lang=config["剧情"].get("language")
     headers = {
         'Authorization': f'Bearer {key}',
         'Accept': 'application/json',
@@ -175,25 +185,25 @@ def generate_end_music():
         response = requests.post(music_url, headers=headers, json=payload)
         print(response.text)
         data=json.loads(response.text)["data"]
-        with open(rf"{game_directory}\data\{story_title}\end_music.json", 'w') as f:
-            json.dump(result, f, indent=4)
+        with open(rf"{game_directory}\data\{story_title}\end_{story_id}_music.json", 'w') as f:
+            json.dump(result, f, ensure_ascii=False, indent=4)
         with requests.get(data[0]["audio_url"], stream=True) as r:
-            with open(rf"{game_directory}\data\{story_title}\music\{music_name}.mp3", 'wb') as f:
+            with open(os.path.join(game_directory,"data",story_title,"music",f"{music_name}.mp3"), 'wb') as f:
                 for chunk in r.iter_content(chunk_size=8192):
                     if chunk:
                         f.write(chunk)
         with requests.get(data[1]["audio_url"], stream=True) as r:
-            with open(rf"{game_directory}\data\{story_title}\music\{music_name}1.mp3", 'wb') as f:
+            with open(os.path.join(game_directory,"data",story_title,"music",f"{music_name}1.mp3"), 'wb') as f:
                 for chunk in r.iter_content(chunk_size=8192):
                     if chunk:
                         f.write(chunk)
         with requests.get(data[0]["video_url"], stream=True) as r:
-            with open(rf"{game_directory}\data\{story_title}\music\{music_name}.mp4", 'wb') as f:
+            with open(os.path.join(game_directory,"data",story_title,"music",f"{music_name}.mp4"), 'wb') as f:
                 for chunk in r.iter_content(chunk_size=8192):
                     if chunk:
                         f.write(chunk)
         with requests.get(data[1]["video_url"], stream=True) as r:
-            with open(rf"{game_directory}\data\{story_title}\music\{music_name}1.mp4", 'wb') as f:
+            with open(os.path.join(game_directory,"data",story_title,"music",f"{music_name}1.mp4"), 'wb') as f:
                 for chunk in r.iter_content(chunk_size=8192):
                     if chunk:
                         f.write(chunk)
@@ -201,4 +211,3 @@ def generate_end_music():
     except:
         print("音乐生成失败，检查token是否有效")
         return "error"
-

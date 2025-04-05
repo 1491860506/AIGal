@@ -1,4 +1,3 @@
-import configparser
 import json
 import random
 import requests
@@ -35,8 +34,23 @@ try:
 except:
     game_directory = os.getcwd()
 
-config = configparser.ConfigParser()
-config.read(os.path.join(game_directory, "config.ini"), encoding='utf-8')
+config_file = os.path.join(game_directory, "config.json")
+
+def load_config():
+    """Loads the configuration from the config.json file."""
+    try:
+        with open(config_file, "r", encoding="utf-8") as f:
+            config_data = json.load(f)
+        return config_data
+    except FileNotFoundError:
+        print("Config file not found.")
+        return {}
+    except json.JSONDecodeError:
+        print("Error decoding config.json.")
+        return {}
+
+config = load_config()
+
 
 def initialize_models(id: int, kind_config: List[Dict]):
     """带状态验证的模型初始化"""
@@ -46,7 +60,11 @@ def initialize_models(id: int, kind_config: List[Dict]):
         model_name = item["model"]
         
         try:
-            model_list = json.loads(config.get("模型", f"config_{config_name}_models"))
+            config_list = config["模型"]["configs"] #json.loads(config.get("模型", f"config_{config_name}_models"))
+            #print(config_list.keys())
+            #print(model_name)
+            #print(config_name)
+            model_list=config_list[config_name]["models"]
             model_info = next((m for m in model_list if m["name"] == model_name), None)
             if not model_info:
                 continue
@@ -61,7 +79,7 @@ def initialize_models(id: int, kind_config: List[Dict]):
             "max_retry": int(model_info.get("max_retry", 3)),
             "temperature": model_info.get("temperature", ""),
             "top_p": model_info.get("top_p", ""),
-            "penalty": model_info.get("penalty", ""),
+            "penalty": model_info.get("frequency_penalty", ""),
             "max_tokens": model_info.get("max_tokens", "")
         })
     
@@ -113,11 +131,12 @@ def gpt(system: str, prompt: str, kind: str, id: int) -> str:
     kind_config = None
     for check_kind in [mapped_kind, "默认"]:
         kind_config_key = f"{check_kind}_setting"
-        if config.has_option("模型", kind_config_key):
-            kind_config = json.loads(config.get("模型", kind_config_key))
+        if kind_config_key in config["模型"] and config["模型"][kind_config_key]:
+            kind_config = config["模型"][kind_config_key] 
             break
     
     if not kind_config:
+        print("未在接入模型配置中配置模型")
         return "over_times"
     
     # 初始化检测
@@ -139,9 +158,9 @@ def gpt(system: str, prompt: str, kind: str, id: int) -> str:
     
     # API准备
     try:
-        baseurl = config.get("模型", f"config_{selected_model['config']}_model_baseurl")
-        apikey = config.get("模型", f"config_{selected_model['config']}_api_key")
-    except configparser.NoOptionError:
+        baseurl = config["模型"]["configs"][selected_model['config']]["model_baseurl"] 
+        apikey = config["模型"]["configs"][selected_model['config']]["api_key"]
+    except KeyError:#configparser.NoOptionError:
         pending_destruction.add(id)
         return "error"
     
@@ -165,7 +184,7 @@ def gpt(system: str, prompt: str, kind: str, id: int) -> str:
     
     # 请求执行
     try:
-        response = requests.post(baseurl, headers={
+        response = requests.post(baseurl+'/chat/completions', headers={
             "Accept": "application/json",
             "Authorization": f"Bearer {apikey}",
             "Content-Type": "application/json"
@@ -204,7 +223,7 @@ if __name__ == "__main__":
         result = gpt(
             system="你好",
             prompt="你好，你是谁",
-            kind="角色对话",  # 测试kind映射
+            kind="大纲",  # 测试kind映射
             id=test_id
         )
         
